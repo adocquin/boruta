@@ -55,7 +55,6 @@ def boruta(
 ) -> dict[str, list[str]]:
     # Step 0: Initialize variables
     x: pd.DataFrame = x_original.copy()
-    n_features: int = x.shape[1]
     hits: dict[str, int] = {k: 0 for k in x.columns}
     decisions: dict[str, Decision] = {k: Decision.UNDETERMINED for k in x.columns}
 
@@ -66,6 +65,7 @@ def boruta(
         # The information system is always extended by at least 5 shadow
         # attributes, even if the number of attributes in the original
         # set is lower than 5)
+        n_features: int = x.shape[1]
         for i in range(5 - n_features):
             x_extended[f"added_shadow_{i}"] = np.random.permutation(
                 x_extended.iloc[:, i].values
@@ -91,8 +91,7 @@ def boruta(
         # (MZSA), and then assign a hit to every attribute that scored
         # better than MZSA.
         if round > 2:
-            mzsa: float = np.max(shadow_importances)
-            hits = {key: hits[key] + 1 if value > mzsa else hits[key] for key, value in feature_importances.items()}
+            zsa: float = np.max(shadow_importances)
         # Step 4.1: Apply correction for first 3 rounds
         else:
             sorted_shadow_importances: np.ndarray = np.sort(shadow_importances)[::-1]
@@ -102,7 +101,7 @@ def boruta(
                 zsa = sorted_shadow_importances[2]
             else:
                 zsa = sorted_shadow_importances[1]
-            hits = {key: hits[key] + 1 if value > zsa else hits[key] for key, value in feature_importances.items()}
+        hits = {key: hits[key] + 1 if value > zsa else hits[key] for key, value in feature_importances.items()}
 
         # Step 5: For each attribute with undetermined importance
         # perform a two-sided test of equality with the MZSA.
